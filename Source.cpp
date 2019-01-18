@@ -126,7 +126,7 @@ int main()
 	GLuint modelVbos;
 	glGenBuffers(1, &modelVbos);
 	glBindBuffer(GL_ARRAY_BUFFER, modelVbos);
-	glBufferData(GL_ARRAY_BUFFER, models.size() * sizeof(glm::mat4), &models[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, models.size() * sizeof(glm::mat4), &models[0], GL_STREAM_DRAW);
 
 
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -237,6 +237,7 @@ int main()
 	glm::mat4 proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 1.0f, 1000.0f);
 	glm::mat4 view = glm::lookAt(glm::vec3(20.5f, 20.5f, 20.0f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
 	GLenum err;
+	sf::Clock clock;
 	while ((err = glGetError()) != GL_NO_ERROR)
 	{
 		std::cout << err << std::endl;
@@ -246,12 +247,13 @@ int main()
 	bool running = true;
 	sf::Vector2i lastPosition = sf::Mouse::getPosition(window);
 	sf::Vector2i mouseDelta = sf::Vector2i();
+	bool isCaptured = false;
+	bool debounce = false;
+	int debounceCounter = 0;
 	while (running)
 	{
 		
-		mouseDelta = sf::Mouse::getPosition(window) - lastPosition;
-		lastPosition = sf::Mouse::getPosition(window);
-		std::cout << "Mouse delta x, " << mouseDelta.x << " y, " << mouseDelta.y << std::endl;
+		
 		sf::Event windowEvent;
 		while (window.pollEvent(windowEvent))
 		{
@@ -262,25 +264,73 @@ int main()
 				break;
 			}
 		}
+		while ((err = glGetError()) != GL_NO_ERROR)
+		{
+			std::cout << err << std::endl;
+		}
 
 		// Clear the screen to black
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::P) && !debounce) {
+			debounce = true;
+			debounceCounter = 0;
+			isCaptured = !isCaptured;
+			if (isCaptured) {
+				window.setMouseCursorGrabbed(true);
+				//window.setMouseCursorVisible(false);
+			}
+			else {
+				window.setMouseCursorGrabbed(false);
+				//window.setMouseCursorVisible(true);
+			}
+			lastPosition = sf::Vector2i(window.getSize().x / 2.0f, window.getSize().y / 2.0f);
+		}
+		else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
+			running = false;
+		}
+		if (debounceCounter > 1000) {
+			debounce = false;
+		}
+		debounceCounter++;
+		glm::mat4 model = glm::mat4();
+		if (isCaptured) {
+			sf::Mouse::setPosition(lastPosition,window);
+			model = glm::translate(glm::mat4(), glm::vec3(0, r, 0));
+			mouseDelta = sf::Mouse::getPosition(window) - lastPosition;
+			if (mouseDelta.y != 0) {
+				std::cout << "Mouse delta x, " << mouseDelta.x << " y, " << mouseDelta.y << std::endl;
+			}
+			
+		}
+		int a = 0;
+		for (int x = 0; x < 100; x++) {
+			for (int y = 0; y < 100; y++) {
+				a++;
+				models[100 * x + y] = glm::translate(glm::mat4(), glm::vec3(0,sin(clock.getElapsedTime().asSeconds()),0));
+			}
+		}
 
+		/*glBindBuffer(GL_ARRAY_BUFFER, modelVbos);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, models.size() * sizeof(glm::mat4), &models[0]);
+		glVertexAttribDivisor(pos1, 1);
+		glVertexAttribDivisor(pos2, 1);
+		glVertexAttribDivisor(pos3, 1);
+		glVertexAttribDivisor(pos4, 1);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);*/
 
 		// Draw a rectangle from the 2 triangles using 6 indices
-
-		glm::mat4 model = glm::translate(glm::mat4(), glm::vec3(0, -0.5f, 0));
-
-		glm::mat4 f = proj * view * glm::mat4();
+		r += ((float)-mouseDelta.y /1000.f);
+		
+		
+		glm::mat4 f = proj * view * glm::translate(glm::mat4(),glm::vec3(0,1,0));
 		glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(f));
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 10000);
 		//glDrawArrays(GL_TRIANGLES, 0, 36);
 		glm::mat4 f2 = proj * view * glm::mat4();
 		glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(f2));
-		glDrawArrays(GL_TRIANGLES, 36, 6);
-		r += 0.0001;
+		//glDrawArrays(GL_TRIANGLES, 36, 6);
 		// Swap buffers
 		window.display();
 	}
