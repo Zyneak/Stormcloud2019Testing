@@ -1,5 +1,3 @@
-
-
 #include <GL/gl3w.h>
 #include <SFML/Window.hpp>
 #include <Stormcloud.h>
@@ -10,9 +8,9 @@
 // Shader sources
 const GLchar* vertexSource = R"glsl(
     #version 330 core
-    in vec3 position;
+    layout(location = 0)in vec3 position;
 	uniform mat4 MVP;
-    in vec3 color;
+    layout(location = 1) in vec3 color;
     out vec3 Color;
 	layout(location = 2) in mat4 modelMatrix;
     void main()
@@ -99,25 +97,37 @@ int main()
 			 0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 0.0f,
 			-0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 0.0f,
 			-0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
-			
-			1.0f, 1.0f, -.5f, 1.0f, 1.0f, 1.0f,
-		    1.f, -1.0f, -.5f, 1.0f, 1.0f, 1.0f,
-			-1.0f, 1.0f, -.5f, 1.0f, 1.0f, 1.0f,
-			-1.0f, 1.0f, -.5f, 1.0f, 1.0f, 1.0f,
-			1.f, -1.0f, -.5f, 1.0f, 1.0f, 1.0f,
-			-1.f, -1.0f, -.5f, 1.0f, 1.0f, 1.0f,
+
+			1000.0f,0.f, 1000.0f,1.0f, 1.0f, 1.0f,
+			1000.f, 0.f,-1000.0f,1.0f, 1.0f, 1.0f,
+			-1000.0f,0.f, 1000.0f,1.0f, 1.0f, 1.0f,
+			-1000.0f,0.f, 1000.0f, 1.0f, 1.0f, 1.0f,
+			1000.f,0.f, -1000.0f, 1.0f, 1.0f, 1.0f,
+			-1000.f,0.f, -1000.0f, 1.0f, 1.0f, 1.0f,
 	};
 
-	std::vector<glm::mat4> models = std::vector<glm::mat4>();
-	models.push_back(glm::rotate(glm::mat4(),glm::radians(30.0f),glm::vec3(1,0,0)));
-
+	std::vector<glm::mat4> models = std::vector<glm::mat4>(); 
+	for (int x = 0; x < 100; x++) {
+		for (int y = 0; y < 100; y++) {
+			models.push_back(glm::translate(glm::mat4(), glm::vec3(x*2- 100/2, 0, y * 2 - 100/2)));
+		}
+	}
+	/*
+	models.push_back(glm::rotate(glm::mat4(), glm::radians(30.0f), glm::vec3(1, 0, 0)));
+	models.push_back(glm::rotate(glm::mat4(), glm::radians(40.0f), glm::vec3(1, 0, 0)));
+	models.push_back(glm::rotate(glm::mat4(), glm::radians(50.0f), glm::vec3(1, 0, 0)));
+	models.push_back(glm::rotate(glm::mat4(), glm::radians(60.0f), glm::vec3(1, 0, 0)));
+	models.push_back(glm::rotate(glm::mat4(), glm::radians(60.0f), glm::vec3(1, 0, 0)));*/
+	GLuint VAO;
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 	GLuint modelVbos;
 	glGenBuffers(1, &modelVbos);
 	glBindBuffer(GL_ARRAY_BUFFER, modelVbos);
-	glBufferData(GL_ARRAY_BUFFER, models.size() * 16 * sizeof(GLfloat), &models[0], GL_STATIC_DRAW);
-	
+	glBufferData(GL_ARRAY_BUFFER, models.size() * sizeof(glm::mat4), &models[0], GL_STATIC_DRAW);
+
 
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertexShader, 1, &vertexSource, NULL);
@@ -153,7 +163,7 @@ int main()
 		// The maxLength includes the NULL character
 		std::vector<GLchar> errorLog(maxLength);
 		glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, &errorLog[0]);
-		for (int i = 0; i < errorLog.size();i++) {
+		for (int i = 0; i < errorLog.size(); i++) {
 			std::cout << errorLog[i];
 		}
 		std::cout << std::endl;
@@ -172,7 +182,7 @@ int main()
 	success = 0;
 	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
 	GLchar infoLog[512];
-	
+
 	if (success == GL_FALSE) {
 		GLint maxLength = 0;
 		glGetProgramiv(shaderProgram, GL_INFO_LOG_LENGTH, &maxLength);
@@ -202,8 +212,7 @@ int main()
 	glEnableVertexAttribArray(colAttrib);
 	glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
 
-	
-	glBindBuffer(GL_ARRAY_BUFFER, modelVbos);
+
 	GLint pos = glGetAttribLocation(shaderProgram, "modelMatrix");
 	std::cout << pos << std::endl;
 	GLint pos1 = pos + 0;
@@ -215,28 +224,34 @@ int main()
 	glEnableVertexAttribArray(pos3);
 	glEnableVertexAttribArray(pos4);
 	glBindBuffer(GL_ARRAY_BUFFER, modelVbos);
-	glVertexAttribPointer(pos1, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4 * 4, (void*)(0));
-	glVertexAttribPointer(pos2, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4 * 4, (void*)(sizeof(float) * 4));
-	glVertexAttribPointer(pos3, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4 * 4, (void*)(sizeof(float) * 8));
-	glVertexAttribPointer(pos4, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4 * 4, (void*)(sizeof(float) * 12));
+	glVertexAttribPointer(pos1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(0));
+	glVertexAttribPointer(pos2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+	glVertexAttribPointer(pos3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+	glVertexAttribPointer(pos4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
 	glVertexAttribDivisor(pos1, 1);
 	glVertexAttribDivisor(pos2, 1);
 	glVertexAttribDivisor(pos3, 1);
 	glVertexAttribDivisor(pos4, 1);
 
 	GLint uniProj = glGetUniformLocation(shaderProgram, "MVP");
-	glm::mat4 proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 1.0f, 10.0f);
-	glm::mat4 view = glm::lookAt(glm::vec3(2.5f, 2.5f, 2.0f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 0.f, 1.f));
+	glm::mat4 proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 1.0f, 1000.0f);
+	glm::mat4 view = glm::lookAt(glm::vec3(20.5f, 20.5f, 20.0f), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
 	GLenum err;
 	while ((err = glGetError()) != GL_NO_ERROR)
 	{
 		std::cout << err << std::endl;
 	}
 	float r = 0;
-	
+
 	bool running = true;
+	sf::Vector2i lastPosition = sf::Mouse::getPosition(window);
+	sf::Vector2i mouseDelta = sf::Vector2i();
 	while (running)
 	{
+		
+		mouseDelta = sf::Mouse::getPosition(window) - lastPosition;
+		lastPosition = sf::Mouse::getPosition(window);
+		std::cout << "Mouse delta x, " << mouseDelta.x << " y, " << mouseDelta.y << std::endl;
 		sf::Event windowEvent;
 		while (window.pollEvent(windowEvent))
 		{
@@ -252,13 +267,16 @@ int main()
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
+
 		// Draw a rectangle from the 2 triangles using 6 indices
 
-		glm::mat4 model = glm::rotate(glm::mat4(), r, glm::vec3(0, 0, 1));
-		
-		glm::mat4 f = proj * view * model;
+		glm::mat4 model = glm::translate(glm::mat4(), glm::vec3(0, -0.5f, 0));
+
+		glm::mat4 f = proj * view * glm::mat4();
 		glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(f));
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 10000);
+		//glDrawArrays(GL_TRIANGLES, 0, 36);
 		glm::mat4 f2 = proj * view * glm::mat4();
 		glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(f2));
 		glDrawArrays(GL_TRIANGLES, 36, 6);
