@@ -264,10 +264,7 @@ int main()
 				break;
 			}
 		}
-		while ((err = glGetError()) != GL_NO_ERROR)
-		{
-			std::cout << err << std::endl;
-		}
+		
 
 		// Clear the screen to black
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -304,14 +301,16 @@ int main()
 			}
 			
 		}
-		int a = 0;
 		for (int x = 0; x < 100; x++) {
 			for (int y = 0; y < 100; y++) {
-				a++;
-				models[100 * x + y] = glm::translate(glm::mat4(), glm::vec3(0,sin(clock.getElapsedTime().asSeconds()),0));
+				models[100 * x + y] = glm::translate(glm::mat4(), glm::vec3(x * 2 - 100 / 2, sin(clock.getElapsedTime().asSeconds()+(100 * x + y)), y * 2 - 100 / 2));
 			}
 		}
-
+		glBufferSubData(GL_ARRAY_BUFFER, 0,  sizeof(glm::mat4) * models.size(), &models[0]);
+		while ((err = glGetError()) != GL_NO_ERROR)
+		{
+			std::cout << err << std::endl;
+		}
 		/*glBindBuffer(GL_ARRAY_BUFFER, modelVbos);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, models.size() * sizeof(glm::mat4), &models[0]);
 		glVertexAttribDivisor(pos1, 1);
@@ -324,7 +323,7 @@ int main()
 		r += ((float)-mouseDelta.y /1000.f);
 		
 		
-		glm::mat4 f = proj * view * glm::translate(glm::mat4(),glm::vec3(0,1,0));
+		glm::mat4 f = proj * view * glm::mat4();//glm::translate(glm::mat4(),glm::vec3(0,1,0));
 		glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(f));
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 10000);
 		//glDrawArrays(GL_TRIANGLES, 0, 36);
